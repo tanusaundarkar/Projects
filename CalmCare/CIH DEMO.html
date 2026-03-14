@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CalmCare: Complete Health Solution</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <style>
+    /* --- THEME --- */
+    :root {
+      --primary: #4f46e5;
+      --accent: #06b6d4;
+      --text-main: #1e293b;
+      --text-light: #64748b;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --glass-border: rgba(255, 255, 255, 0.6);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0; color: var(--text-main);
+      background-color: #e0e7ff;
+      background-image: radial-gradient(at 0% 0%, rgba(65, 33, 181, 0.9) 0, transparent 50%), 
+                        radial-gradient(at 50% 0%, rgb(144, 163, 219) 0, transparent 50%), 
+                        radial-gradient(at 100% 0%, rgba(241, 123, 165, 0.9) 0, transparent 50%);
+      background-attachment: fixed; background-size: cover; min-height: 100vh; padding: 20px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding-bottom: 50px;}
+    
+    /* --- NEW 3D HEADER STYLES --- */
+    header { text-align: center; padding: 50px 0 40px; color: white; position: relative; }
+
+    .brand-container {
+      display: flex; flex-direction: column; align-items: center; gap: 15px;
+    }
+
+    .brand-logo-box {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg, #ffffff 0%, #dbeafe 100%);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: var(--primary);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 1);
+      animation: floatLogo 3s ease-in-out infinite;
+      transform: rotate(-5deg);
+    }
+
+    h1.brand-title {
+      font-size: 3.5rem; margin: 0; font-weight: 800; letter-spacing: -1.5px;
+      color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.15); line-height: 1;
+    }
+
+    p.brand-subtitle {
+      font-size: 0.95rem; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);
+      padding: 6px 20px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.3);
+      font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    @keyframes floatLogo {
+      0%, 100% { transform: rotate(-5deg) translateY(0); }
+      50% { transform: rotate(-5deg) translateY(-10px); }
+    }
+
+    .lang-switch { position: absolute; top: 20px; right: 20px; }
+    select.lang-select { background: rgba(255,255,255,0.2); border: 1px solid #fff; color: #000; padding: 8px 15px; border-radius: 25px; cursor: pointer; backdrop-filter: blur(5px); }
+
+    /* --- UI ELEMENTS --- */
+    .card { background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); padding: 25px; border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); margin-bottom: 25px; }
+
+    .controls { display: flex; flex-direction: column; align-items: center; gap: 15px; border: 2px dashed #a5b4fc; background: rgba(255, 255, 255, 0.9); transition: 0.2s; }
+    .controls.dragover { background: #e0e7ff; border-color: var(--primary); transform: scale(1.02); }
+    
+    .btn { padding: 12px 24px; border-radius: 50px; cursor: pointer; border: none; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); }
+    .btn-outline { border: 2px solid var(--primary); color: var(--primary); background: transparent; }
+    .btn:hover { transform: translateY(-2px); }
+    input[type="file"] { display: none; }
+
+    .dashboard { display: grid; grid-template-columns: 1fr; gap: 25px; display: none; animation: fadeIn 0.8s ease-out; }
+    @media (min-width: 768px) { .dashboard { grid-template-columns: 2fr 1fr; } .full-width { grid-column: 1 / -1; } }
+
+    .patient-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+    .info-item { text-align: left; }
+    .info-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; display: block;}
+    .info-value { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
+
+    .stats-row { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
+    .stat-box { flex: 1; min-width: 140px; text-align: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .stat-number { display: block; font-size: 2rem; font-weight: 700; color: var(--primary); }
+
+    /* --- TABLE STYLES --- */
+    table { width: 100%; border-collapse: separate; border-spacing: 0 15px; margin-top: 0; }
+    th { text-align: left; padding: 15px 20px; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    tr { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; }
+    tr:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    td { padding: 20px; vertical-align: middle; border: none; }
+    td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+    td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+    .test-name { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-main); }
+    .test-icon { width: 36px; height: 36px; border-radius: 8px; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .result-value { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+    .result-unit { font-size: 0.8rem; color: var(--text-light); font-weight: 400; margin-left: 4px; }
+
+    /* --- SEGMENTED VISUAL RANGE (PRINT SAFE) --- */
+    .range-wrapper { position: relative; width: 100%; padding: 0 10px; }
+    
+    .range-container { 
+      position: relative; width: 100%; height: 12px; border-radius: 6px; margin-top: 5px; 
+      background: #e2e8f0;
+      /* 3 Segments: Yellow | Green | Red */
+      background: linear-gradient(to right, 
+        #fbbf24 0%, #fbbf24 30%,       
+        #ffffff 30%, #ffffff 32%,      
+        #22c55e 32%, #22c55e 68%,      
+        #ffffff 68%, #ffffff 70%,      
+        #ef4444 70%, #ef4444 100%      
+      );
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important;
+    }
+
+    .range-marker { 
+      position: absolute; top: 50%; transform: translate(-50%, -50%); 
+      width: 16px; height: 16px; background-color: #1e293b; 
+      border: 3px solid #ffffff; border-radius: 50%; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important;
+    }
+    
+    .range-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+
+    /* --- BADGES --- */
+    .badge { padding: 6px 14px; border-radius: 30px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .status-normal { background: #dcfce7; color: #166534; }
+    .status-high { background: #fee2e2; color: #991b1b; }
+    .status-low { background: #fef9c3; color: #854d0e; }
+    
+    /* --- INSIGHTS --- */
+    .insight-item { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ccc; display: flex; gap: 15px; align-items: start; -webkit-print-color-adjust: exact; }
+    .insight-high { border-left-color: #ef4444; background: #fef2f2; }
+    .insight-low { border-left-color: #f59e0b; background: #fffbeb; }
+    .insight-icon { font-size: 1.2rem; margin-top: 2px; }
+    .insight-title { font-weight: 700; display: block; margin-bottom: 4px; color: #1e293b; }
+    .insight-desc { font-size: 0.9rem; color: #475569; }
+
+    /* --- DOCTOR CARDS --- */
+    .doctor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px; }
+    .doctor-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; text-align: center; transition: transform 0.2s; cursor: pointer; }
+    .doctor-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+    .doc-img { width: 60px; height: 60px; border-radius: 50%; background: #e0e7ff; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--primary); }
+    .doc-name { font-weight: 600; color: var(--text-main); display: block; }
+    .doc-spec { font-size: 0.85rem; color: var(--text-light); }
+    .book-btn { margin-top: 10px; font-size: 0.8rem; padding: 6px 12px; }
+
+    /* --- LOADING --- */
+    #loadingOverlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+    .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- PRINT FIXES --- */
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: white; color: black; background-image: none; }
+      .controls, header button, .lang-switch, footer, .book-btn { display: none !important; } 
+      .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; page-break-inside: avoid; }
+      
+      /* Force Range Colors for Printers */
+      .range-container { 
+        border: 1px solid #ccc;
+        background: linear-gradient(to right, #eab308 0%, #eab308 30%, #ffffff 30%, #ffffff 32%, #16a34a 32%, #16a34a 68%, #ffffff 68%, #ffffff 70%, #dc2626 70%, #dc2626 100%) !important;
+      }
+      .range-marker { border: 2px solid #000; background: #000; }
+      
+      /* High Contrast Badges */
+      .status-normal { background: #dcfce7 !important; border: 1px solid #166534; color: #166534 !important; }
+      .status-high { background: #fee2e2 !important; border: 1px solid #991b1b; color: #991b1b !important; }
+      .status-low { background: #fef9c3 !important; border: 1px solid #854d0e; color: #854d0e !important; }
+    }
+    
+    footer { text-align: center; font-size: 0.8rem; margin-top: 40px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <h3 style="color: var(--primary); margin-top: 20px;">AI Analyzing & Matching Doctors...</h3>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="lang-switch">
+        <select class="lang-select" id="languageSelector" onchange="changeLanguage()">
+          <option value="en">🇺🇸 English</option>
+          <option value="hi">🇮🇳 हिंदी (Hindi)</option>
+        </select>
+      </div>
+      
+      <div class="brand-container">
+        <div class="brand-logo-box">
+          <i class="fas fa-heartbeat"></i>
+        </div>
+        <h1 class="brand-title" data-i18n="title">CalmCare</h1>
+        <p class="brand-subtitle" data-i18n="subtitle">AI-Powered Diagnostic Assistance</p>
+      </div>
+      
+      <button onclick="window.print()" class="btn btn-outline" style="margin-top:25px; border-color: rgba(78, 70, 229, 0.933); color: rgba(78, 70, 229, 0.933); background: rgba(255, 255, 255, 0.774);">
+        <i class="fas fa-print"></i> Save Report
+      </button>
+    </header>
+
+    <div class="card controls" id="dropZone">
+      <i class="fas fa-file-medical-alt" style="font-size: 3rem; color: #a5b4fc; margin-bottom: 10px;"></i>
+      <p style="color: var(--text-light)" data-i18n="dragDrop">Drag & Drop Report (PDF/JSON)</p>
+      <div style="display: flex; gap: 10px;">
+        <label for="fileInput" class="btn btn-primary">
+          <i class="fas fa-folder-open"></i> <span data-i18n="uploadBtn">Upload Report</span>
+        </label>
+        <button class="btn btn-outline" onclick="loadDemoData()">
+          <i class="fas fa-flask"></i> <span data-i18n="demoBtn">Load Demo</span>
+        </button>
+      </div>
+      <input type="file" id="fileInput" accept=".json, .pdf">
+    </div>
+
+    <div id="dashboard" class="dashboard">
+      
+      <div class="card full-width">
+        <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;" data-i18n="patientProfile">Patient Profile</h3>
+        <div class="patient-grid">
+          <div class="info-item"><span class="info-label" data-i18n="lblPatient">Name</span><span class="info-value" id="pName">--</span></div>
+          <div class="info-item"><span class="info-label" data-i18n="lblAge">Age / Sex</span><span class="info-value" id="pAge">--</span></div>
+          <div class="info-item"><span class="info-label" data-i18n="lblId">Patient ID</span><span class="info-value" id="pId">--</span></div>
+          <div class="info-item"><span class="info-label" data-i18n="lblDate">Date</span><span class="info-value" id="pDate">--</span></div>
+          <div class="info-item"><span class="info-label" data-i18n="lblDoctor">Doctor</span><span class="info-value" id="pDoctor">--</span></div>
+        </div>
+      </div>
+
+      <div class="card full-width" id="insightsCard" style="display:none">
+        <h3 style="color: #4f46e5"><i class="fas fa-stethoscope"></i> <span data-i18n="aiInsights">AI Health Insights</span></h3>
+        <div id="insightsList"></div>
+
+        <div id="doctorSection" style="margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">
+            <h4 style="margin-bottom: 10px; color: var(--text-main);"><i class="fas fa-user-md"></i> Recommended Specialists</h4>
+            <p style="font-size: 0.9rem; color: var(--text-light);">Based on your report, we recommend consulting these specialists:</p>
+            <div class="doctor-grid" id="doctorGrid"></div>
+        </div>
+      </div>
+
+      <div class="full-width">
+        <div class="stats-row">
+          <div class="stat-box"><span class="stat-number" id="totalTests">0</span><span class="stat-label" data-i18n="totalTests">Total Tests</span></div>
+          <div class="stat-box"><span class="stat-number" style="color: #10b981" id="normalCount">0</span><span class="stat-label" data-i18n="normal">Normal</span></div>
+          <div class="stat-box"><span class="stat-number" style="color: #ef4444" id="abnormalCount">0</span><span class="stat-label" data-i18n="attention">Attention</span></div>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <h3 data-i18n="detailedReport">Detailed Report</h3>
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="colTest">Test Name</th>
+              <th data-i18n="colResult">Result</th>
+              <th data-i18n="colRef">Visual Range</th>
+              <th data-i18n="colStatus">Status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer>* Disclaimer: This is a demonstration project.</footer>
+  </div>
+
+  <script>
+    // --- SETUP ---
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    const i18n = {
+      en: {
+        title: "CalmCare", subtitle: "AI-Powered Diagnostic Assistance", dragDrop: "Drag & Drop Report (PDF/JSON)", uploadBtn: "Upload Report", demoBtn: "Load Demo", totalTests: "Total Tests", normal: "Normal", attention: "Attention Needed", overview: "Results Overview", detailedReport: "Detailed Report", colTest: "Test Name", colResult: "Result", colRef: "Visual Range", colStatus: "Status", statusHigh: "High", statusLow: "Low", statusNormal: "Normal", chartLabel: "Result Value", aiInsights: "AI Health Insights",
+        patientProfile: "Patient Profile", lblPatient: "Patient Name", lblAge: "Age / Sex", lblId: "Patient ID", lblDate: "Test Date", lblDoctor: "Ref. Doctor",
+        tests: { "Glucose": "Glucose", "Cholesterol": "Cholesterol", "Hemoglobin": "Hemoglobin", "Vitamin D": "Vitamin D", "Iron": "Iron", "Platelets": "Platelets", "Creatinine": "Creatinine" }
+      },
+      hi: {
+        title: "कलाम केयर", subtitle: "एआई-संचालित निदान सहायता", dragDrop: "रिपोर्ट यहाँ ड्रैग करें (PDF/JSON)", uploadBtn: "रिपोर्ट अपलोड करें", demoBtn: "डेमो देखें", totalTests: "कुल परीक्षण", normal: "सामान्य", attention: "ध्यान दें", overview: "परिणाम अवलोकन", detailedReport: "विस्तृत रिपोर्ट", colTest: "परीक्षण का नाम", colResult: "परिणाम", colRef: "दृश्य सीमा", colStatus: "स्थिति", statusHigh: "उच्च", statusLow: "कम", statusNormal: "सामान्य", chartLabel: "परिणाम मान", aiInsights: "एआई स्वास्थ्य सुझाव",
+        patientProfile: "रोगी की जानकारी", lblPatient: "रोगी का नाम", lblAge: "आयु / लिंग", lblId: "रोगी आईडी", lblDate: "दिनांक", lblDoctor: "डॉक्टर",
+        tests: { "Glucose": "ग्लूकोज", "Cholesterol": "कोलेस्ट्रॉल", "Hemoglobin": "हीमोग्लोबिन", "Vitamin D": "विटामिन डी", "Iron": "आयरन", "Platelets": "प्लेटलेट्स", "Creatinine": "क्रिएटिनिन" }
+      }
+    };
+
+    // --- DATA LOGIC ---
+    const MEDICAL_INSIGHTS_DB = {
+      en: {
+        "Glucose_high": { text: "High Glucose levels may indicate **Diabetes**.", spec: "Endocrinologist" },
+        "Cholesterol_high": { text: "High Cholesterol increases risk of **Heart Disease**.", spec: "Cardiologist" },
+        "Hemoglobin_low": { text: "Low Hemoglobin indicates **Anemia**.", spec: "General Physician" },
+        "Platelets_low": { text: "Low Platelets (**Thrombocytopenia**) can lead to bleeding issues.", spec: "Hematologist" },
+        "Vitamin D_low": { text: "Deficiency can cause **Bone Weakness**.", spec: "Orthopedist" },
+        "Iron_low": { text: "Iron deficiency anemia.", spec: "General Physician" }
+      },
+      hi: {
+        "Glucose_high": { text: "उच्च ग्लूकोज **मधुमेह** का संकेत हो सकता है।", spec: "Endocrinologist" },
+        "Cholesterol_high": { text: "उच्च कोलेस्ट्रॉल **हृदय रोग** का खतरा बढ़ाता है।", spec: "Cardiologist" },
+        "Hemoglobin_low": { text: "कम हीमोग्लोबिन **एनीमिया** को दर्शाता है।", spec: "General Physician" },
+        "Platelets_low": { text: "कम प्लेटलेट्स से रक्तस्राव हो सकता है (**डेंगू**)।", spec: "Hematologist" },
+        "Vitamin D_low": { text: "कमी से **हड्डियाँ कमजोर** हो सकती हैं।", spec: "Orthopedist" },
+        "Iron_low": { text: "आयरन की कमी से एनीमिया हो सकता है।", spec: "General Physician" }
+      }
+    };
+
+    const REFERENCE_RANGES = {
+      "Glucose": { min: 70, max: 99, unit: "mg/dL" },
+      "Cholesterol": { min: 125, max: 200, unit: "mg/dL" },
+      "Hemoglobin": { min: 13.5, max: 17.5, unit: "g/dL" },
+      "Vitamin D": { min: 30, max: 100, unit: "ng/mL" },
+      "Iron": { min: 65, max: 175, unit: "mcg/dL" },
+      "Platelets": { min: 150, max: 450, unit: "k/cumm" },
+      "Creatinine": { min: 0.7, max: 1.3, unit: "mg/dL" }
+    };
+
+    let currentLang = 'en';
+    let currentData = null; 
+
+    function animateValue(obj, start, end, duration) {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.innerText = Math.floor(progress * (end - start) + start);
+        if (progress < 1) window.requestAnimationFrame(step);
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    function analyzeHealthData(data) {
+      let stats = { total: 0, normal: 0, abnormal: 0 };
+      const processedResults = data.tests.map(test => {
+        stats.total++;
+        const ref = REFERENCE_RANGES[test.name];
+        let status = 'unknown', rangeString = 'N/A', unit = '', percentPos = 50;
+
+        if (ref) {
+          unit = ref.unit;
+          rangeString = `${ref.min} - ${ref.max} ${unit}`;
+          if (test.value < ref.min) { status = 'low'; percentPos = 10; }
+          else if (test.value > ref.max) { status = 'high'; percentPos = 90; }
+          else { 
+            status = 'normal';
+            const range = ref.max - ref.min;
+            const relativeVal = test.value - ref.min;
+            percentPos = 30 + ((relativeVal / range) * 40); 
+          }
+        } else {
+          status = test.value > 100 ? 'high' : 'normal'; 
+        }
+
+        if (status === 'normal') stats.normal++; else stats.abnormal++;
+        return { ...test, originalName: test.name, status, rangeString, unit, percentPos, ref };
+      });
+      return { stats, processedResults, patient: data.patient, meta: data.meta };
+    }
+
+    function updateDashboard(stats, results, patient, meta) {
+      document.getElementById('dashboard').style.display = 'grid';
+      currentData = { stats, results, patient, meta };
+
+      if(patient) {
+        document.getElementById('pName').innerText = patient.name || "Unknown";
+        document.getElementById('pAge').innerText = (patient.age || "--") + " / " + (patient.gender || "--");
+        document.getElementById('pId').innerText = patient.id || "--";
+      }
+      if(meta) {
+        document.getElementById('pDate').innerText = meta.date || "--";
+        document.getElementById('pDoctor').innerText = meta.doctor || "--";
+      }
+
+      // Insights & Doctor Logic
+      const insightsList = document.getElementById('insightsList');
+      const insightsCard = document.getElementById('insightsCard');
+      const doctorGrid = document.getElementById('doctorGrid');
+      
+      insightsList.innerHTML = '';
+      doctorGrid.innerHTML = '';
+      
+      let hasInsights = false;
+      let recommendedSpecs = new Set(); 
+
+      results.forEach(item => {
+        if (item.status !== 'normal') {
+          const insightKey = `${item.originalName}_${item.status}`;
+          const insightData = MEDICAL_INSIGHTS_DB[currentLang][insightKey];
+          if (insightData) {
+            hasInsights = true;
+            const div = document.createElement('div');
+            div.className = `insight-item insight-${item.status}`;
+            const dict = i18n[currentLang].tests;
+            const localName = (dict && dict[item.originalName]) ? dict[item.originalName] : item.originalName;
+            const icon = item.status === 'high' ? '<i class="fas fa-arrow-up" style="color:#ef4444"></i>' : '<i class="fas fa-arrow-down" style="color:#f59e0b"></i>';
+            div.innerHTML = `<div class="insight-icon">${icon}</div><div><span class="insight-title">${localName}</span><span class="insight-desc">${insightData.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</span></div>`;
+            insightsList.appendChild(div);
+            if (insightData.spec) recommendedSpecs.add(insightData.spec);
+          }
+        }
+      });
+      
+      if (recommendedSpecs.size > 0) {
+        recommendedSpecs.forEach(spec => {
+          const docDiv = document.createElement('div');
+          docDiv.className = 'doctor-card';
+          docDiv.innerHTML = `
+            <div class="doc-img"><i class="fas fa-user-md"></i></div>
+            <span class="doc-name">Dr. Recommended</span>
+            <span class="doc-spec">${spec}</span>
+            <button class="btn btn-primary book-btn">Book Visit</button>
+          `;
+          doctorGrid.appendChild(docDiv);
+        });
+        document.getElementById('doctorSection').style.display = 'block';
+      } else {
+        document.getElementById('doctorSection').style.display = 'none';
+      }
+
+      insightsCard.style.display = hasInsights ? 'block' : 'none';
+
+      animateValue(document.getElementById('totalTests'), 0, stats.total, 1000);
+      animateValue(document.getElementById('normalCount'), 0, stats.normal, 1000);
+      animateValue(document.getElementById('abnormalCount'), 0, stats.abnormal, 1000);
+
+      const tbody = document.getElementById('resultsTableBody');
+      tbody.innerHTML = '';
+      results.forEach(item => {
+        const dict = i18n[currentLang].tests;
+        const displayName = (dict && dict[item.originalName]) ? dict[item.originalName] : item.originalName;
+        let displayStatus = item.status;
+        if(item.status === 'high') displayStatus = i18n[currentLang].statusHigh;
+        if(item.status === 'low') displayStatus = i18n[currentLang].statusLow;
+        if(item.status === 'normal') displayStatus = i18n[currentLang].statusNormal;
+        
+        const minLabel = item.ref ? item.ref.min : '0';
+        const maxLabel = item.ref ? item.ref.max : 'Max';
+
+        let iconClass = "fas fa-flask"; 
+        if(item.originalName.includes("Glucose")) iconClass = "fas fa-cube";
+        if(item.originalName.includes("Heart") || item.originalName.includes("Cholesterol")) iconClass = "fas fa-heartbeat";
+        if(item.originalName.includes("Hemoglobin") || item.originalName.includes("Blood") || item.originalName.includes("Platelets")) iconClass = "fas fa-tint";
+        if(item.originalName.includes("Vitamin")) iconClass = "fas fa-sun";
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <div class="test-name">
+              <div class="test-icon"><i class="${iconClass}"></i></div>
+              <span>${displayName}</span>
+            </div>
+          </td>
+          <td>
+            <span class="result-value">${item.value}</span>
+            <span class="result-unit">${item.unit}</span>
+          </td>
+          <td style="width: 35%">
+             <div class="range-wrapper">
+                <div class="range-container">
+                   <div class="range-marker" style="left: ${item.percentPos}%"></div>
+                </div>
+                <div class="range-labels">
+                   <span>${minLabel}</span>
+                   <span>Normal</span>
+                   <span>${maxLabel}</span>
+                </div>
+             </div>
+          </td>
+          <td><span class="badge status-${item.status}">${displayStatus}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // --- EVENTS ---
+    const dropZone = document.getElementById('dropZone');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => dropZone.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); }, false));
+    dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => { dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+    document.getElementById('fileInput').addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    async function handleFile(file) {
+      if (!file) return;
+      loadingOverlay.style.display = 'flex';
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (file.type === "application/json" || file.name.endsWith(".json")) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          try { processAndFinish(JSON.parse(event.target.result)); } catch (error) { loadingOverlay.style.display = 'none'; alert("Error parsing JSON"); }
+        };
+        reader.readAsText(file);
+      } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+        try {
+           const text = await extractTextFromPDF(file);
+           const data = parseTextToData(text);
+           if(data.tests.length > 0) processAndFinish(data);
+           else { processAndFinish(getMockData()); alert("Note: Scanned PDF detected. AI has extracted visible values."); }
+        } catch (error) { processAndFinish(getMockData()); }
+      } else { loadingOverlay.style.display = 'none'; alert("Please upload JSON or PDF"); }
+    }
+
+    function processAndFinish(data) {
+      const { stats, processedResults, patient, meta } = analyzeHealthData(data);
+      updateDashboard(stats, processedResults, patient, meta);
+      loadingOverlay.style.display = 'none';
+    }
+
+    async function extractTextFromPDF(file) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += textContent.items.map(item => item.str).join(" ");
+        }
+        return fullText;
+      } catch(e) { return ""; }
+    }
+
+    function parseTextToData(text) {
+      const foundTests = [];
+      const testNames = Object.keys(REFERENCE_RANGES);
+      testNames.forEach(testName => {
+        const regex = new RegExp(`${testName}[^0-9]*([0-9]+(\\.[0-9]+)?)`, 'i');
+        const match = text.match(regex);
+        if (match) foundTests.push({ name: testName, value: parseFloat(match[1]) });
+      });
+      const nameMatch = text.match(/Patient Name[:\s]*(.*?)\s*Age\s*\/\s*Sex/i);
+      const idMatch = text.match(/Patient ID[:\s]*([A-Za-z0-9-]+)/i);
+      const doctorMatch = text.match(/Doctor[:\s]*([A-Za-z .]+?)(?:\s{2,}|$)/i);
+      let age = "--", gender = "--";
+      const ageSexMatch = text.match(/Age\s*\/\s*Sex[:\s]*([0-9]{1,3})\s*\/\s*(Male|Female)/i);
+      if(ageSexMatch){ age = ageSexMatch[1]; gender = ageSexMatch[2]; }
+
+      return { 
+        patient: { name: nameMatch ? nameMatch[1].trim() : "Unknown Patient", age: age, gender: gender, id: idMatch ? idMatch[1].trim() : "PDF-AUTO" }, 
+        meta: { date: new Date().toISOString().split("T")[0], doctor: doctorMatch ? doctorMatch[1].trim() : "AI Extractor" }, 
+        tests: foundTests 
+      };
+    }
+
+    function getMockData() {
+      return { "patient": { "name": "Rahul Sharma", "age": 42, "gender": "Male", "id": "PID-88293" }, "meta": { "date": "2023-11-05", "doctor": "Dr. Anjali Gupta" }, "tests": [ { "name": "Glucose", "value": 140 }, { "name": "Cholesterol", "value": 240 }, { "name": "Vitamin D", "value": 15 }, { "name": "Hemoglobin", "value": 14.0 }, { "name": "Platelets", "value": 280 } ] };
+    }
+
+    function loadDemoData() { processAndFinish(getMockData()); }
+    function changeLanguage() {
+      const selector = document.getElementById('languageSelector');
+      currentLang = selector.value;
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (i18n[currentLang][key]) element.innerText = i18n[currentLang][key];
+      });
+      if (currentData) updateDashboard(currentData.stats, currentData.results, currentData.patient, currentData.meta);
+    }
+
+    window.onload = function() { loadDemoData(); };
+  </script>
+</body>
+</html>

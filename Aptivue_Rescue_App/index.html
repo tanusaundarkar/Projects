@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Intelligent Rescue System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+    <style>
+        /* --- SOS OVERLAY STYLES --- */
+#sos-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #d6d8df;
+    z-index: 10000; /* Stays above everything */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: rgb(19, 18, 18);
+    text-align: center;
+    padding: 20px;
+}
+
+.sos-button {
+    width: 220px;
+    height: 220px;
+    background: #ff0000;
+    border-radius: 50%;
+    border: 8px solid white;
+    color: rgb(216, 208, 208);
+    font-size: 3rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.6);
+    animation: sos-pulse 1.5s infinite;
+    margin-bottom: 30px;
+}
+
+@keyframes sos-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 25px rgba(255, 0, 0, 0); }
+    100% { transform: scale(1); }
+}
+
+.sos-question-box {
+    background: #222;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 400px;
+}
+
+.btn-choice {
+    padding: 15px 25px;
+    margin: 10px;
+    border-radius: 10px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* --- NEW EMERGENCY ACTION BUTTONS --- */
+.btn-emergency-action {
+    padding: 18px;
+    margin: 10px 0;
+    border-radius: 12px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    color: white;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+.btn-emergency-action:active { transform: scale(0.98); }
+.bg-call { background: #2e7d32; }
+.bg-location { background: #1565c0; }
+
+        /* --- GLOBAL RESET --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        html { font-size: 120%; }
+        body { height: 100vh; overflow: hidden; transition: background 0.3s; }
+
+        .app-section { display: none; height: 100%; width: 100%; }
+        .app-section.active { display: flex; }
+
+        /* ==============================
+           1. LOGIN SCREEN
+           ============================== */
+        #login-app { align-items: center; justify-content: center; background: rgb(228, 228, 182); flex-direction: column; }
+        .login-box { background: white; padding: 40px; border-radius: 10px; width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-login { width: 100%; padding: 12px; background: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-login:hover { background: #b71c1c; }
+
+        /* ==============================
+           2. ADMIN DASHBOARD (BEIGE THEME)
+           ============================== */
+        #admin-app { background-color: #f5f5dc; color: #e3d6d6; flex-direction: row; }
+        .sidebar { width: 260px; background: #eaddca; padding: 20px; border-right: 1px solid #d2b48c; display: flex; flex-direction: column; }
+        .logo { font-size: 1.5rem; font-weight: bold; margin-bottom: 40px; color: #8b0000; display: flex; align-items: center; gap: 10px; }
+        .menu-item { padding: 15px; border-radius: 8px; cursor: pointer; color: #5d4037; transition: 0.2s; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover, .menu-item.active { background: #d2b48c; color: #fff; }
+        .btn-logout-admin { margin-top: auto; background: #d2b48c; color: #8b0000; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; transition: 0.2s; border: 1px solid #c1a17b; }
+        .btn-logout-admin:hover { background: #c1a17b; color: white; }
+
+        .admin-main { flex: 1; padding: 30px; overflow-y: auto; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .admin-header h1 { color: #5d4037; }
+        .sim-btn { background: #8b4513; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .a-card { background: #fff; padding: 20px; border-radius: 10px; border-left: 5px solid #d2b48c; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .a-card h3 { font-size: 2.5rem; margin-bottom: 5px; color: #5d4037; }
+        .a-card p { color: #8b7355; font-weight: bold; }
+        .a-card.red { border-color: #ff4444; } .a-card.red h3 { color: #ff4444; }
+        .a-card.orange { border-color: #ffbb33; } .a-card.orange h3 { color: #ffbb33; }
+        .a-card.green { border-color: #00C851; } .a-card.green h3 { color: #00C851; }
+        
+        .table-wrapper { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #eaddca; padding: 15px; text-align: left; color: #5d4037; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #d2b48c; }
+        td { padding: 15px; border-bottom: 1px solid #eee; font-size: 0.95rem; color: #333; }
+        
+        /* BADGES */
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .p-high { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid #ff4444; animation: flash 2s infinite; }
+        .p-med { background: rgba(255, 187, 51, 0.15); color: #ffbb33; border: 1px solid #ffbb33; }
+        .p-low { background: rgba(0, 200, 81, 0.15); color: #00C851; border: 1px solid #00C851; }
+        
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .btn-resolve { padding: 8px 15px; background: #8b4513; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        /* ==============================
+           3. USER APP
+           ============================== */
+        #user-app { background: #f4f6f8; color: #161616; flex-direction: column; height: 100vh; }
+        
+        .user-nav { width: 100%; background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 100; flex-shrink: 0; }
+        .user-brand { font-weight: bold; font-size: 1.1rem; color: #d32f2f; display: flex; align-items: center; gap: 8px; }
+        .btn-logout-user { background: #ffebee; color: #c62828; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+
+        .user-content { flex: 1; position: relative; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
+        .user-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; width: 100%; animation: fade 0.3s; }
+        .user-screen.active { display: flex; }
+        @keyframes fade { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+
+        .u-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; }
+        .u-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .u-card:hover { border-color: #d32f2f; transform: translateY(-3px); }
+        .u-card i { font-size: 2rem; margin-bottom: 10px; color: #555; }
+        
+        .progress-bar { width: 100%; max-width: 400px; height: 6px; background: #ddd; margin-bottom: 20px; border-radius: 3px; }
+        .progress-fill { height: 100%; background: #d32f2f; width: 0%; transition: width 0.3s; }
+
+        /* --- CHAT SCROLL FIX --- */
+        #u-chat { padding: 0; justify-content: flex-end; }
+        .chat-frame { display: flex; flex-direction: column; width: 100%; max-width: 600px; height: 100%; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); margin: 0 auto; }
+        .chat-msgs { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .msg { padding: 12px 18px; border-radius: 15px; max-width: 85%; font-size: 1.15rem; line-height: 1.4; word-wrap: break-word; }
+        .bot { background: #f1f1f1; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user { background: #e3f2fd; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        .mic-active { background-color: #d32f2f !important; color: white !important; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(211, 47, 47, 0); } 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); } }
+
+    </style>
+</head>
+<body>
+    <div id="sos-overlay">
+    <div id="sos-initial">
+        <h1 style="margin-bottom: 20px;">Emergency?</h1>
+        <button class="sos-button" onclick="triggerSOS()">SOS</button>
+        <p style="opacity: 0.8;">Tap for immediate rescue signal</p>
+        <button onclick="skipToLogin()" style="margin-top:40px; background:none; border:none; color:#777; text-decoration:underline; cursor:pointer;">Staff/Admin Login</button>
+    </div>
+
+    <div id="sos-questions" style="display:none;" class="sos-question-box">
+        <h2 style="margin-bottom:20px; color: white;">Signal Sent! Help is being routed.</h2>
+        <p style="margin-bottom:20px; color: white;">Are you safe enough to answer 2 questions to help rescuers?</p>
+        <button class="btn-choice" style="background:#2e7d32; color:white;" onclick="proceedToUserApp()">YES, I CAN ANSWER</button>
+        <button class="btn-choice" style="background:#d32f2f; color:white;" onclick="finishSOSOnly()">NO, NEED HELP NOW</button>
+    </div>
+</div>
+
+    <div id="login-app" class="app-section active">
+        <div class="login-box">
+            <h2 style="margin-bottom: 20px; color: #333;">Secure Login</h2>
+            <div style="text-align: left; background: #eee; padding: 10px; font-size: 1.0rem; margin-bottom: 15px; border-radius: 5px;">
+                <strong>Admin:</strong> admin / admin<br>
+                <strong>User:</strong> user / user
+            </div>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button class="btn-login" onclick="handleLogin()">Access System</button>
+            <p id="login-error" style="color: red; margin-top: 10px; display: none;">Invalid Credentials</p>
+        </div>
+    </div>
+
+    <div id="admin-app" class="app-section">
+        <div class="sidebar">
+            <div class="logo"><i class="fa-solid fa-tower-broadcast"></i> COMMAND</div>
+            <div class="menu-item active"><i class="fa-solid fa-list"></i> Live Incoming</div>
+            <div class="menu-item"><i class="fa-solid fa-map-location-dot"></i> Map View</div>
+            <div class="btn-logout-admin" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+        </div>
+        <div class="admin-main">
+            <div class="admin-header">
+                <div><h1>Emergency Triage Board</h1><p style="color: #8b7355;">Monitoring live field data</p></div>
+                <div>
+                    <button class="sim-btn" onclick="clearData()" style="background:#8b7355; margin-right: 10px;">Reset</button>
+                    <button class="sim-btn" onclick="simulateNewCase()">+ Simulate Call</button>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="a-card red"><h3 id="stat-crit">0</h3><p>Critical Priority</p></div>
+                <div class="a-card orange"><h3 id="stat-med">0</h3><p>Medium Priority</p></div>
+                <div class="a-card green"><h3 id="stat-low">0</h3><p>Low Priority</p></div>
+                <div class="a-card"><h3 id="stat-total">0</h3><p>Total Active</p></div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Severity</th><th>Type</th><th>Language</th><th>Details</th><th>Action</th></tr></thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-app" class="app-section">
+        <div class="user-nav">
+            <div class="user-brand"><i class="fa-solid fa-star-of-life"></i> RESCUE APP</div>
+            <button class="btn-logout-user" onclick="logout()"><i class="fa-solid fa-power-off"></i> Logout</button>
+        </div>
+        <div class="user-content">
+            <div id="u-lang" class="user-screen active">
+                <h2 style="margin-bottom:30px;">Select Language</h2>
+                <div class="u-grid">
+                    <div class="u-card" onclick="setUserLang('English')"><h3>English 🇺🇸</h3></div>
+                    <div class="u-card" onclick="setUserLang('Spanish')"><h3>Español 🇪🇸</h3></div>
+                    <div class="u-card" onclick="setUserLang('Hindi')"><h3>हिंदी 🇮🇳</h3></div>
+                    <div class="u-card" onclick="setUserLang('French')"><h3>Français 🇫🇷</h3></div>
+                </div>
+            </div>
+            <div id="u-type" class="user-screen">
+                <h2 style="margin-bottom:30px;">Emergency Type?</h2>
+                <div class="u-grid">
+                    <div class="u-card" onclick="setUserType('Medical')"><i class="fa-solid fa-user-doctor"></i><br>Medical</div>
+                    <div class="u-card" onclick="setUserType('Fire')"><i class="fa-solid fa-fire"></i><br>Fire</div>
+                    <div class="u-card" onclick="setUserType('Police')"><i class="fa-solid fa-shield-halved"></i><br>Police</div>
+                    <div class="u-card" onclick="setUserType('Supplies')"><i class="fa-solid fa-box-open"></i><br>Supplies</div>
+                </div>
+            </div>
+            <div id="u-question" class="user-screen">
+                <div class="progress-bar"><div id="q-progress" class="progress-fill"></div></div>
+                <h2 id="q-text" style="text-align: center; margin-bottom: 30px;">Loading...</h2>
+                <div class="u-grid">
+                    <div class="u-card" style="background:#e8f5e9; border-color:#81c784;" onclick="answerQuestion('Yes')"><h3 style="color:#2e7d32">YES</h3></div>
+                    <div class="u-card" style="background:#ffebee; border-color:#e57373;" onclick="answerQuestion('No')"><h3 style="color:#c62828">NO</h3></div>
+                </div>
+            </div>
+            <div id="u-chat" class="user-screen">
+                <div class="chat-frame">
+                    <div style="background:#d32f2f; color:white; padding:15px; text-align:center; font-weight:bold; flex-shrink: 0;">AI Response Unit</div>
+                    <div id="chat-box" class="chat-msgs"></div>
+                    <div style="padding:15px; border-top:1px solid #eee; display: flex; gap: 10px; align-items: center; background: white; flex-shrink: 0;">
+                        <button id="mic-btn" onclick="toggleMic()" style="background:#f1f3f4; border:1px solid #ccc; width:40px; height:40px; border-radius:50%; cursor:pointer; color:#555;"><i class="fa-solid fa-microphone"></i></button>
+                        <input type="text" id="u-input" placeholder="Type or Speak..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:20px;">
+                        <button onclick="sendUserMsg()" style="background:#d32f2f; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+    'English': {
+        questions: {
+            Medical: ["Is patient conscious?", "Heavy bleeding?", "Breathing normally?", "Can walk?", "First aid kit?"],
+            Fire: ["Open flames?", "Heavy smoke?", "Trapped inside?", "Currently alone?", "Exit blocked?"],
+            Police: ["Immediate danger?", "See a weapon?", "Safe hiding spot?", "Multiple attackers?", "Anyone injured?"],
+            Supplies: ["Have water?", "Have food?", "Anyone sick?", "Have shelter?", "Baby supplies needed?"]
+        },
+        ui: { 
+            yes: "YES", no: "NO", loading: "Loading...", chatTitle: "AI Response Unit", inputPlural: "Type or Speak...", helpOnWay: "Help is on the way.",
+            emergencyHeader: "Emergency Type?",
+            types: { Medical: "Medical", Fire: "Fire", Police: "Police", Supplies: "Supplies" }
+        },
+        chatbot: {
+            introHigh: "This is a high priority alert. I have notified the team. Please tell me, are you currently in a safe place?",
+            introLow: "I have logged your request. While we wait for an agent, please describe your situation.",
+            responses: [
+                { keys: ["scared", "afraid", "fear"], msg: "I know this is scary, but I am here. Focus on my voice. Take slow, deep breaths. You are doing everything right." },
+                { keys: ["blood", "bleeding", "cut"], msg: "Apply firm, direct pressure to the wound with a cloth. Keep it elevated if possible. Do not remove the cloth." },
+                { keys: ["pain", "hurt", "broken"], msg: "Try not to move the injured area. Keep it supported and stable. Help is coordinating to reach you." },
+                { keys: ["smoke", "cough"], msg: "Get low to the floor immediately. Cover your mouth with a cloth, preferably wet. Stay away from the smoke." },
+                { keys: ["trapped", "stuck", "door"], msg: "Please bang on a wall or pipe so rescuers can hear you. Shouting can exhaust you, so make loud noises with objects if you can." },
+                { keys: ["location", "where"], msg: "I have your digital location logged. Responders are viewing it on the map now." }
+            ],
+            default: "Understood. I have logged all your details. Please keep this line open. Responders are moving towards your sector.",
+            followUps: ["Are there any other people with you right now?", "Can you describe any major landmarks near you?", "Do you have enough battery left on your phone?", "Is it possible for you to move to a safer location nearby?", "Do you have access to any clean water?"]
+        },
+        voiceCode: 'en-US'
+    },
+    'Spanish': {
+        questions: {
+            Medical: ["¿Está consciente?", "¿Sangrado intenso?", "¿Respira normal?", "¿Puede caminar?", "¿Botiquín?"],
+            Fire: ["¿Llamas abiertas?", "¿Humo denso?", "¿Atrapado?", "¿Está solo?", "¿Salida bloqueada?"],
+            Police: ["¿Peligro inmediato?", "¿Ve un arma?", "¿Lugar seguro?", "¿Varios atacantes?", "¿Hay heridos?"],
+            Supplies: ["¿Tiene agua?", "¿Tiene comida?", "¿Enfermos?", "¿Tiene refugio?", "¿Suministros bebé?"]
+        },
+        ui: { 
+            yes: "SÍ", no: "NO", loading: "Cargando...", chatTitle: "Unidad de IA", inputPlural: "Escriba o hable...", helpOnWay: "La ayuda está en camino.",
+            emergencyHeader: "¿Tipo de Emergencia?",
+            types: { Medical: "Médico", Fire: "Incendio", Police: "Policía", Supplies: "Suministros" }
+        },
+        chatbot: {
+            introHigh: "Esta es una alerta de alta prioridad. He notificado al equipo. Por favor dígame, ¿está en un lugar seguro?",
+            introLow: "He registrado su solicitud. Mientras esperamos a un agente, describa su situación.",
+            responses: [
+                { keys: ["miedo", "asustado", "temor"], msg: "Sé que esto da miedo, pero estoy aquí. Concéntrese en mi voz. Respire lento y profundo." },
+                { keys: ["sangre", "sangrando", "corte"], msg: "Aplique presión firme y directa sobre la herida con un paño. Manténgalo elevado si es posible." },
+                { keys: ["dolor", "herido", "roto"], msg: "Trate de no mover el área lesionada. Manténgala apoyada y estable. La ayuda está en camino." },
+                { keys: ["humo", "tos"], msg: "Baje al suelo inmediatamente. Cúbrase la boca con un paño, preferiblemente húmedo." },
+                { keys: ["atrapado", "atorado", "puerta"], msg: "Golpee una pared o tubería para que los rescatistas puedan escucharlo. Gritar puede agotarlo." },
+                { keys: ["ubicación", "donde"], msg: "Tengo su ubicación digital registrada. Los socorristas la están viendo en el mapa ahora." }
+            ],
+            default: "Entendido. He registrado todos sus detalles. Por favor mantenga esta línea abierta. Los socorristas se dirigen a su sector.",
+            followUps: ["¿Hay otras personas con usted en este momento?", "¿Puede describir algún punto de referencia importante cerca de usted?", "¿Le queda suficiente batería en su teléfono?", "¿Es posible que se mueva a un lugar más seguro cercano?", "¿Tiene acceso a agua limpia?"]
+        },
+        voiceCode: 'es-ES'
+    },
+    'Hindi': {
+        questions: {
+            Medical: ["क्या मरीज होश में है?", "भारी रक्तस्राव?", "सामान्य रूप से सांस ले रहे हैं?", "चल सकते हैं?", "प्राथमिक चिकित्सा किट?"],
+            Fire: ["खुली लपटें?", "भारी धुआं?", "अंदर फंसे हुए हैं?", "वर्तमान में अकेले?", "निकास अवरुद्ध?"],
+            Police: ["तत्काल खतरा?", "हथियार देखा?", "सुरक्षित छिपने की जगह?", "कई हमलावर?", "कोई घायल?"],
+            Supplies: ["पानी है?", "खाना है?", "कोई बीमार है?", "आश्रय है?", "बेबी सप्लाई चाहिए?"]
+        },
+        ui: { 
+            yes: "हाँ", no: "नहीं", loading: "लोड हो रहा है...", chatTitle: "एआई सहायता", inputPlural: "टाइप करें या बोलें...", helpOnWay: "मदद रास्ते में है।",
+            emergencyHeader: "आपातकाल का प्रकार?",
+            types: { Medical: "चिकित्सा", Fire: "आग", Police: "पुलिस", Supplies: "सामग्री" }
+        },
+        chatbot: {
+            introHigh: "यह एक उच्च प्राथमिकता वाली चेतावनी है। मैंने टीम को सूचित कर दिया है। कृपया मुझे बताएं, क्या आप अभी सुरक्षित स्थान पर हैं?",
+            introLow: "मैंने आपका अनुरोध दर्ज कर लिया है। जब तक हम किसी एजेंट की प्रतीक्षा कर रहे हैं, कृपया अपनी स्थिति का वर्णन करें।",
+            responses: [
+                { keys: ["डर", "भय", "घबराहट"], msg: "मुझे पता है कि यह डरावना है, लेकिन मैं यहाँ हूँ। मेरी आवाज़ पर ध्यान दें। धीमी, गहरी साँसें लें। आप सब कुछ ठीक कर रहे हैं।" },
+                { keys: ["खून", "रक्त", "कट"], msg: "कपड़े से घाव पर जोर से दबाव डालें। यदि संभव हो तो इसे ऊपर उठाएं। कपड़ा न हटाएं।" },
+                { keys: ["दर्द", "चोट", "टूटा"], msg: "चोट वाली जगह को हिलाने की कोशिश न करें। इसे सहारा दें और स्थिर रखें। मदद आप तक पहुँच रही है।" },
+                { keys: ["धुआं", "खांसी"], msg: "तुरंत फर्श पर झुक जाएं। अपने मुंह को कपड़े से ढक लें, हो सके तो गीला कपड़ा इस्तेमाल करें। धुएं से दूर रहें।" },
+                { keys: ["फंसा", "अटका", "दरवाजा"], msg: "कृपया दीवार या पाइप पर जोर से मारें ताकि बचाव दल आपको सुन सकें। चिल्लाने से आप थक सकते हैं, इसलिए वस्तुओं से शोर मचाएं।" },
+                { keys: ["स्थान", "जगह", "कहाँ"], msg: "मैंने आपकी डिजिटल लोकेशन लॉग कर ली है। बचाव दल इसे अभी मैप पर देख रहे हैं।" }
+            ],
+            default: "समझ गया। मैंने आपके सभी विवरण लॉग कर लिए हैं। कृपया इस लाइन को चालू रखें। बचाव दल आपके क्षेत्र की ओर बढ़ रहे हैं।",
+            followUps: ["क्या आपके साथ अभी कोई और भी है?", "क्या आप अपने आस-पास किसी प्रमुख लैंडमार्क का वर्णन कर सकते हैं?", "क्या आपके फोन में पर्याप्त बैटरी बची है?", "क्या आपके लिए पास के किसी सुरक्षित स्थान पर जाना संभव है?", "क्या आपके पास साफ पानी उपलब्ध है?"]
+        },
+        voiceCode: 'hi-IN'
+    },
+    'French': {
+        questions: {
+            Medical: ["Le patient est conscient ?", "Saignement abondant ?", "Respiration normale ?", "Peut marcher ?", "Trousse de secours ?"],
+            Fire: ["Flammes nues ?", "Fumée épaisse ?", "Coincé à l'intérieur ?", "Actuellement seul ?", "Sortie bloquée ?"],
+            Police: ["Danger immédiat ?", "Arme visible ?", "Cachette sûre ?", "Plusieurs agresseurs ?", "Quelqu'un blessé ?"],
+            Supplies: ["Avez-vous de l'eau ?", "Avez-vous de la nourriture ?", "Quelqu'un malade ?", "Avez-vous un abri ?", "Bébé ?"]
+        },
+        ui: { 
+            yes: "OUI", no: "NON", loading: "Chargement...", chatTitle: "Unité IA", inputPlural: "Écrivez ou parlez...", helpOnWay: "Les secours arrivent.",
+            emergencyHeader: "Type d'urgence ?",
+            types: { Medical: "Médical", Fire: "Incendie", Police: "Police", Supplies: "Provisions" }
+        },
+        chatbot: {
+            introHigh: "Ceci est une alerte prioritaire. J'ai prévenu l'équipe. Êtes-vous en sécurité ?",
+            introLow: "J'ai enregistré votre demande. Décrivez votre situation en attendant un agent.",
+            responses: [
+                { keys: ["peur", "effrayé", "crainte"], msg: "Je sais que c'est effrayant, mais je suis là. Concentrez-vous sur ma voix. Respirez lentement." },
+                { keys: ["sang", "saigne", "coupure"], msg: "Appliquez une pression ferme sur la plaie avec un tissu. Gardez-la surélevée si possible." },
+                { keys: ["douleur", "mal", "cassé"], msg: "Essayez de ne pas bouger la zone blessée. Gardez-la stable. Les secours arrivent." },
+                { keys: ["fumée", "toux"], msg: "Baissez-vous au sol immédiatement. Couvrez votre bouche avec un tissu, de préférence humide." },
+                { keys: ["coincé", "bloqué", "porte"], msg: "Tapez sur un mur ou un tuyau pour que les sauveteurs vous entendent. Crier peut vous épuiser." },
+                { keys: ["position", "où", "localisation"], msg: "J'ai votre position numérique. Les intervenants la voient sur la carte." }
+            ],
+            default: "Compris. J'ai noté tous les détails. Gardez la ligne ouverte. Les secours se dirigent vers votre secteur.",
+            followUps: ["Y a-t-il d'autres personnes avec vous ?", "Pouvez-vous décrire un point de repère proche ?", "Avez-vous assez de batterie ?", "Pouvez-vous vous déplacer vers un lieu sûr ?", "Avez-vous de l'eau potable ?"]
+        },
+        voiceCode: 'fr-FR'
+    }
+};
+        // --- SOS FLOW LOGIC ---
+
+function triggerSOS() {
+    const cases = JSON.parse(localStorage.getItem('emergency_cases')) || [];
+    
+    // Create the "Silent Ticket" for Admin
+    cases.push({ 
+        id: Date.now(), 
+        type: '🚨 SOS PANIC', 
+        severity: 3, 
+        lang: 'Detecting...', 
+        desc: 'USER PRESSED SOS - IMMEDIATE DISPATCH REQUIRED' 
+    });
+    localStorage.setItem('emergency_cases', JSON.stringify(cases));
+
+    document.getElementById('sos-initial').style.display = 'none';
+    document.getElementById('sos-questions').style.display = 'block';
+    
+    speakText("Signal received. Help is being notified. Can you talk?");
+}
+
+function skipToLogin() {
+    document.getElementById('sos-overlay').style.display = 'none';
+}
+
+function finishSOSOnly() {
+    // UPDATED: Added Emergency and Location buttons
+    document.getElementById('sos-questions').innerHTML = `
+        <h1 style="color:#ff4444;">HELP IS ON THE WAY</h1>
+        <p style="margin:20px 0; color:#bbb;">Take immediate action below while rescuers coordinate:</p>
+        
+        <a href="tel:911" class="btn-emergency-action bg-call">
+            <i class="fa-solid fa-phone-flip"></i> CALL EMERGENCY
+        </a>
+        
+        <button class="btn-emergency-action bg-location" onclick="shareLiveLocation()">
+            <i class="fa-solid fa-location-crosshairs"></i> SHARE LIVE LOCATION
+        </button>
+
+        <p id="loc-status" style="margin-top:10px; font-size:1.2rem; color:#4caf50; font-weight:bold;"></p>
+
+        <button class="btn-login" style="margin-top:20px; background:#444;" onclick="location.reload()">Reset App</button>
+    `;
+    speakText("Help is on the way. You can now call emergency or share your location.");
+}
+
+function shareLiveLocation() {
+    const status = document.getElementById('loc-status');
+    status.innerText = "Accessing GPS...";
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const cases = JSON.parse(localStorage.getItem('emergency_cases')) || [];
+        cases.push({ 
+            id: Date.now(), 
+            type: '📍 LOCATION', 
+            severity: 3, 
+            lang: 'GPS', 
+            desc: `Coords: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` 
+        });
+        localStorage.setItem('emergency_cases', JSON.stringify(cases));
+        status.innerText = "Location Sent to Rescuers!";
+    }, () => {
+        status.innerText = "GPS Access Denied.";
+        status.style.color = "#ff4444";
+    });
+}
+
+function proceedToUserApp() {
+    document.getElementById('sos-overlay').style.display = 'none';
+    showApp('user-app');
+    resetUserFlow(); 
+}
+        // --- 2. LOGIN LOGIC ---
+        function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if (u === 'admin' && p === 'admin') { showApp('admin-app'); loadAdminDashboard(); }
+            else if (u === 'user' && p === 'user') { showApp('user-app'); resetUserFlow(); }
+            else { document.getElementById('login-error').style.display = 'block'; }
+        }
+        function logout() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            showApp('login-app');
+        }
+        function showApp(id) {
+            document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // --- 3. INTELLIGENT CHATBOT LOGIC ---
+        function generateSmartResponse(userText) {
+            const text = userText.toLowerCase();
+            const langData = translations[userState.lang] || translations['English'];
+            const botData = langData.chatbot;
+
+            // Check specific responses based on language keywords
+            for (let item of botData.responses) {
+                for (let key of item.keys) {
+                    if (text.includes(key)) return item.msg;
+                }
+            }
+
+            // Follow ups
+            if (userState.followUps && userState.followUps.length > 0) {
+                const nextQ = userState.followUps.shift(); 
+                return nextQ;
+            } else {
+                return botData.default;
+            }
+        }
+
+        // --- 4. VOICE LOGIC ---
+        let recognition; let isListening = false;
+        function initVoice() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                
+                // Dynamic Language Selection
+                const langData = translations[userState.lang] || translations['English'];
+                recognition.lang = langData.voiceCode;
+
+                recognition.onstart = function() { isListening = true; document.getElementById('mic-btn').classList.add('mic-active'); };
+                recognition.onend = function() { isListening = false; document.getElementById('mic-btn').classList.remove('mic-active'); };
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('u-input').value = transcript;
+                    setTimeout(sendUserMsg, 1000); 
+                };
+            } else { alert("Voice input not supported in this browser."); document.getElementById('mic-btn').style.display = 'none'; }
+        }
+        function toggleMic() { if (!recognition) initVoice(); if (isListening) recognition.stop(); else recognition.start(); }
+        function speakText(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            const langData = translations[userState.lang] || translations['English'];
+            utterance.lang = langData.voiceCode; // Speaks in the selected language
+            utterance.rate = 0.95;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- 5. USER APP LOGIC ---
+        let userState = { lang: 'English', type: '', answers: [], severity: 1, qIndex: 0, followUps: [] };
+        function resetUserFlow() {
+            userState = { lang: 'English', type: '', answers: [], severity: 1, qIndex: 0, followUps: [] };
+            document.querySelectorAll('.user-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('u-lang').classList.add('active');
+            document.getElementById('chat-box').innerHTML = '';
+            initVoice(); 
+        }
+        function setUserLang(l) { 
+            userState.lang = l; 
+            // Update UI labels based on language
+            const langData = translations[l] || translations['English'];
+            document.querySelector('#u-question .u-card:nth-child(1) h3').innerText = langData.ui.yes;
+            document.querySelector('#u-question .u-card:nth-child(2) h3').innerText = langData.ui.no;
+            
+            // Update Emergency Type Header and Cards
+            document.querySelector('#u-type h2').innerText = langData.ui.emergencyHeader;
+            const typeCards = document.querySelectorAll('#u-type .u-card');
+            typeCards[0].innerHTML = `<i class="fa-solid fa-user-doctor"></i><br>${langData.ui.types.Medical}`;
+            typeCards[1].innerHTML = `<i class="fa-solid fa-fire"></i><br>${langData.ui.types.Fire}`;
+            typeCards[2].innerHTML = `<i class="fa-solid fa-shield-halved"></i><br>${langData.ui.types.Police}`;
+            typeCards[3].innerHTML = `<i class="fa-solid fa-box-open"></i><br>${langData.ui.types.Supplies}`;
+
+            // Update Chat Title and Input
+            document.querySelector('#u-chat .chat-frame > div:first-child').innerText = langData.ui.chatTitle;
+            document.getElementById('u-input').placeholder = langData.ui.inputPlural;
+
+            switchUserScreen('u-type'); 
+        }
+        function setUserType(t) { userState.type = t; userState.qIndex = 0; userState.answers = []; loadQuestion(); switchUserScreen('u-question'); }
+        function loadQuestion() {
+            const langData = translations[userState.lang] || translations['English'];
+            const qs = langData.questions[userState.type];
+            document.getElementById('q-text').innerText = `${userState.qIndex + 1}. ${qs[userState.qIndex]}`;
+            document.getElementById('q-progress').style.width = (((userState.qIndex) / 5) * 100) + '%';
+        }
+        function answerQuestion(ans) {
+            const langData = translations[userState.lang] || translations['English'];
+            userState.answers.push({ q: langData.questions[userState.type][userState.qIndex], a: ans });
+            userState.qIndex++;
+            if(userState.qIndex < 5) loadQuestion(); else { calculateSeverity(); submitCaseToAdmin(); startChat(); }
+        }
+        function calculateSeverity() {
+            let critCount = 0;
+            userState.answers.forEach(item => { if(item.a === 'Yes') critCount++; });
+            if (userState.type === 'Supplies') {
+                userState.severity = 1; 
+            } else {
+                if(critCount === 0) userState.severity = 2; 
+                else userState.severity = 3; 
+            }
+        }
+        function startChat() {
+            switchUserScreen('u-chat');
+            // Initialize followups for this session based on language
+            const langData = translations[userState.lang] || translations['English'];
+            userState.followUps = [...langData.chatbot.followUps];
+
+            let ticket = `[AUTO-REPORT]\nTYPE: ${userState.type}\nLANGUAGE: ${userState.lang}`;
+            addChatMsg('bot', ticket, false);
+            setTimeout(() => {
+                let intro = userState.severity === 3 ? langData.chatbot.introHigh : langData.chatbot.introLow;
+                addChatMsg('bot', intro, true); 
+            }, 800);
+        }
+        function switchUserScreen(id) {
+            document.querySelectorAll('.user-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function sendUserMsg() {
+            const inp = document.getElementById('u-input');
+            const userText = inp.value.trim();
+            if(userText) {
+                addChatMsg('user', userText, false);
+                inp.value = '';
+                const response = generateSmartResponse(userText);
+                setTimeout(() => { addChatMsg('bot', response, true); }, 1200);
+            }
+        }
+        function addChatMsg(cls, txt, speak) {
+            const div = document.createElement('div');
+            div.className = `msg ${cls}`;
+            div.innerText = txt;
+            const chatBox = document.getElementById('chat-box');
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            if(speak && cls === 'bot') speakText(txt);
+        }
+
+        // --- 6. ADMIN LOGIC ---
+        function getCases() { return JSON.parse(localStorage.getItem('emergency_cases')) || []; }
+        function saveCases(cases) { localStorage.setItem('emergency_cases', JSON.stringify(cases)); }
+        function submitCaseToAdmin() {
+            const cases = getCases();
+            let summary = "";
+            userState.answers.forEach(item => { if(item.a === 'Yes') summary += "⚠️ "; });
+            summary += `${userState.answers.length} Qs Answered.`;
+            cases.push({ id: Date.now(), type: userState.type, severity: userState.severity, lang: userState.lang, desc: summary });
+            saveCases(cases);
+        }
+        function loadAdminDashboard() {
+            const cases = getCases();
+            cases.sort((a, b) => b.severity - a.severity);
+            
+            document.getElementById('stat-total').innerText = cases.length;
+            document.getElementById('stat-crit').innerText = cases.filter(c => c.severity === 3).length;
+            document.getElementById('stat-med').innerText = cases.filter(c => c.severity === 2).length;
+            document.getElementById('stat-low').innerText = cases.filter(c => c.severity === 1).length;
+
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+            cases.forEach(c => {
+                let badgeClass, badgeText;
+                if(c.severity === 3) { badgeClass='p-high'; badgeText='CRITICAL'; }
+                else if(c.severity === 2) { badgeClass='p-med'; badgeText='MEDIUM'; }
+                else { badgeClass='p-low'; badgeText='LOW'; }
+
+                const row = `<tr><td><span class="badge ${badgeClass}">${badgeText}</span></td><td><strong>${c.type}</strong></td><td>${c.lang}</td><td>${c.desc}</td><td><button class="btn-resolve" onclick="resolveCase(${c.id})">DISPATCH</button></td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+        function resolveCase(id) { let cases = getCases(); cases = cases.filter(c => c.id !== id); saveCases(cases); loadAdminDashboard(); }
+        function clearData() { localStorage.removeItem('emergency_cases'); loadAdminDashboard(); }
+        
+        function simulateNewCase() {
+            const cases = getCases();
+            const rnd = Math.random();
+            let newC = {};
+            
+            if(rnd < 0.33) {
+                 newC = { id: Date.now(), type: 'Medical', severity: 3, lang: 'English', desc: '⚠️ Simulated Critical' };
+            } else if (rnd < 0.66) {
+                 newC = { id: Date.now(), type: 'Fire', severity: 2, lang: 'Spanish', desc: 'Smoke reported' };
+            } else {
+                 newC = { id: Date.now(), type: 'Supplies', severity: 1, lang: 'French', desc: 'Food needed' };
+            }
+            
+            cases.push(newC);
+            saveCases(cases);
+            loadAdminDashboard();
+        }
+        setInterval(() => { if(document.getElementById('admin-app').classList.contains('active')) loadAdminDashboard(); }, 3000);
+
+    </script>
+</body>
+</html>
